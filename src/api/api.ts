@@ -35,7 +35,6 @@ export const fetchWordleResult = async (request: WordleRequest): Promise<WordleR
             }
         } else {
             const error = await response.text();
-            // Blah
             throw new Error(error);
         }
     } catch (error) {
