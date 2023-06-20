@@ -11,8 +11,8 @@ import LetterMenuItems from "./LetterMenuItems";
 
 export type ClueElement = "g" | "y" | "x";
 export type GuessType = {
-    clueStr: string;
-    wordStr: string;
+    clue: string;
+    word: string;
 };
 
 const MAX_GUESSES = 6;
@@ -48,38 +48,22 @@ const GameBoard: FunctionComponent = () => {
     async function fetchNextGuess(feedback: GuessType) {
         setIsLoading(true);
         setErrorMessage(null);
-        if (feedback.clueStr === WINNING_CLUE) {
+        if (feedback.clue === WINNING_CLUE) {
             setIsWinner(true);
             setIsLoading(false);
             return;
         }
 
         // Make API request
-        const updatedGuesses = [...guesses.slice(0, guessIndex + 1)];
-        updatedGuesses[updatedGuesses.length - 1] = feedback;
-        const newRequest = updatedGuesses.map(({ wordStr, clueStr }) => ({
-            word: wordStr,
-            clue: clueStr,
-        }));
-        const botGuess = await fetchWordleResult(newRequest);
-
-        const newGuess: GuessType = makeNewGuess(botGuess.guess);
+        const botGuess = await fetchWordleResult(guesses.slice(0, guessIndex + 1));
         if (guessIndex < MAX_GUESSES - 1) {
             setGuesses((prev) => {
                 const prevCopy = [...prev];
-                prevCopy[guessIndex] = feedback;
-                prevCopy[guessIndex + 1] = newGuess;
-                return prevCopy;
-            });
-        } else {
-            setGuesses((prev) => {
-                const prevCopy = [...prev];
-                prevCopy[guessIndex] = feedback;
+                prevCopy[guessIndex + 1] = makeNewGuess(botGuess.guess);
                 return prevCopy;
             });
         }
         setIsLoading(false);
-
         setGuessIndex((prev) => prev + 1);
     }
 
@@ -97,10 +81,10 @@ const GameBoard: FunctionComponent = () => {
     function handleMenuItemClick(color: ClueElement) {
         setGuesses((prev) => {
             const newGuesses = [...prev];
-            newGuesses[guessIndex].clueStr =
-                newGuesses[guessIndex].clueStr.substring(0, menuLetterIndex) +
+            newGuesses[guessIndex].clue =
+                newGuesses[guessIndex].clue.substring(0, menuLetterIndex) +
                 color +
-                newGuesses[guessIndex].clueStr.substring(menuLetterIndex + 1);
+                newGuesses[guessIndex].clue.substring(menuLetterIndex + 1);
             return newGuesses;
         });
         handleCloseMenu();
@@ -132,7 +116,7 @@ const GameBoard: FunctionComponent = () => {
                         </Box>
                     )}
                     <GameInstructions />
-                    {guesses.map(({ wordStr, clueStr }, lineIndex) => {
+                    {guesses.map(({ word, clue }, lineIndex) => {
                         const isLastGuessLine = lineIndex === guessIndex;
                         const addSubmitButton: boolean =
                             isLastGuessLine && guessIndex < MAX_GUESSES && !isWinner;
@@ -149,19 +133,19 @@ const GameBoard: FunctionComponent = () => {
                                 }}
                             >
                                 <Guess
-                                    clueStr={clueStr}
+                                    clueStr={clue}
                                     handleOpenMenu={isLastGuessLine ? handleOpenMenu : () => {}}
-                                    wordStr={wordStr}
+                                    wordStr={word}
                                 />
 
                                 <GuessAction
                                     addSubmitButton={addSubmitButton}
-                                    handleFeedback={() => {
+                                    handleFeedback={() =>
                                         handleFeedback({
-                                            wordStr: wordStr,
-                                            clueStr: clueStr,
-                                        });
-                                    }}
+                                            word,
+                                            clue,
+                                        })
+                                    }
                                     isLoading={isLoading}
                                 />
                             </Box>
