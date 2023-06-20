@@ -3,7 +3,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import React, { FunctionComponent, useEffect, useState } from "react";
 import { fetchWordleResult } from "../api/api";
 import { emptyGuess, makeNewGuess } from "../utils/utils";
-import testData from "../testData/TestData.json";
+import GameInstructions from "./GameInstructions";
 import Guess from "./Guess";
 import GameStatus from "./GameStatus";
 import GuessAction from "./GuessAction";
@@ -16,7 +16,6 @@ export type GuessType = {
 };
 
 const MAX_GUESSES = 6;
-const TESTING = false;
 const WINNING_CLUE = "ggggg";
 
 const GameBoard: FunctionComponent = () => {
@@ -41,15 +40,9 @@ const GameBoard: FunctionComponent = () => {
             setIsInitialLoading(false);
         };
 
-        if (TESTING) {
-            setTimeout(() => {
-                setupNewGame(testData[0].word);
-            }, 1000);
-        } else {
-            setIsLoading(true);
-            const data = await fetchWordleResult([]);
-            setupNewGame(data.guess);
-        }
+        setIsLoading(true);
+        const data = await fetchWordleResult([]);
+        setupNewGame(data.guess);
     }
 
     async function fetchNextGuess(feedback: GuessType) {
@@ -60,59 +53,34 @@ const GameBoard: FunctionComponent = () => {
             setIsLoading(false);
             return;
         }
-        if (TESTING) {
-            // Simulate response from API
-            setTimeout(() => {
-                let updatedGuess = { ...guesses[guessIndex] };
-                updatedGuess.clueStr = testData[guessIndex].clue;
-                let newGuess: GuessType | null = null;
-                let newGuesses: GuessType[];
-                if (guessIndex < MAX_GUESSES - 1) {
-                    newGuess = makeNewGuess(testData[guessIndex + 1].word);
-                    newGuesses = [
-                        ...guesses.slice(0, guessIndex + 1),
-                        newGuess,
-                        ...guesses.slice(guessIndex + 2),
-                    ];
-                } else {
-                    newGuesses = [...guesses];
-                }
 
-                newGuesses[guessIndex] = updatedGuess;
-                setGuesses(newGuesses);
-                setIsLoading(false);
+        // Make API request
+        const updatedGuesses = [...guesses.slice(0, guessIndex + 1)];
+        updatedGuesses[updatedGuesses.length - 1] = feedback;
+        const newRequest = updatedGuesses.map(({ wordStr, clueStr }) => ({
+            word: wordStr,
+            clue: clueStr,
+        }));
+        const botGuess = await fetchWordleResult(newRequest);
 
-                setGuessIndex((prev) => prev + 1);
-            }, 100);
+        const newGuess: GuessType = makeNewGuess(botGuess.guess);
+        if (guessIndex < MAX_GUESSES - 1) {
+            setGuesses((prev) => {
+                const prevCopy = [...prev];
+                prevCopy[guessIndex] = feedback;
+                prevCopy[guessIndex + 1] = newGuess;
+                return prevCopy;
+            });
         } else {
-            // Make API request
-            const updatedGuesses = [...guesses.slice(0, guessIndex + 1)];
-            updatedGuesses[updatedGuesses.length - 1] = feedback;
-            const newRequest = updatedGuesses.map(({ wordStr, clueStr }) => ({
-                word: wordStr,
-                clue: clueStr,
-            }));
-            const botGuess = await fetchWordleResult(newRequest);
-
-            const newGuess: GuessType = makeNewGuess(botGuess.guess);
-            if (guessIndex < MAX_GUESSES - 1) {
-                setGuesses((prev) => {
-                    const prevCopy = [...prev];
-                    prevCopy[guessIndex] = feedback;
-                    prevCopy[guessIndex + 1] = newGuess;
-                    return prevCopy;
-                });
-            } else {
-                setGuesses((prev) => {
-                    const prevCopy = [...prev];
-                    prevCopy[guessIndex] = feedback;
-                    return prevCopy;
-                });
-            }
-            setIsLoading(false);
-
-            setGuessIndex((prev) => prev + 1);
+            setGuesses((prev) => {
+                const prevCopy = [...prev];
+                prevCopy[guessIndex] = feedback;
+                return prevCopy;
+            });
         }
+        setIsLoading(false);
+
+        setGuessIndex((prev) => prev + 1);
     }
 
     function handleCloseMenu() {
@@ -163,6 +131,7 @@ const GameBoard: FunctionComponent = () => {
                             <CircularProgress />
                         </Box>
                     )}
+                    <GameInstructions />
                     {guesses.map(({ wordStr, clueStr }, lineIndex) => {
                         const isLastGuessLine = lineIndex === guessIndex;
                         const addSubmitButton: boolean =
