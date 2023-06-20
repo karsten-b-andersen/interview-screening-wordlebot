@@ -2,8 +2,8 @@ import { green, grey, yellow } from "@mui/material/colors";
 import { GuessType } from "../components/GameBoard";
 
 export const emptyGuess = {
-    clueStr: "xxxxx",
-    wordStr: "",
+    clue: "xxxxx",
+    word: "",
 };
 
 export const getBgColor = (clue: string) =>
@@ -11,7 +11,7 @@ export const getBgColor = (clue: string) =>
 
 export const makeNewGuess = (newGuess: string): GuessType => {
     return {
-        wordStr: newGuess,
-        clueStr: "xxxxx",
+        word: newGuess,
+        clue: "xxxxx",
     };
 };
